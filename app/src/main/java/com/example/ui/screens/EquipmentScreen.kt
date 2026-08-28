@@ -53,8 +53,13 @@ fun EquipmentScreen(
     // Rental booking temporary parameters
     var bookingDurationDays by remember { mutableStateOf(3) }
     var includeOperator by remember { mutableStateOf(true) }
+    var isGroupBooking by remember { mutableStateOf(false) }
+    var groupPartnersCount by remember { mutableStateOf(2) }
     var renterNameInput by remember { mutableStateOf("Mamadou Koné") }
     var renterPhoneInput by remember { mutableStateOf("+225 07 12 34 56") }
+
+    var showRoiCalculator by remember { mutableStateOf(false) }
+    var roiSelectedEquipment by remember { mutableStateOf<EquipmentItem?>(null) }
 
     val filteredList = remember(equipmentList, searchQuery, selectedCategory, selectedOfferType, sortByProximity, maxDistanceKm, userCoordinates) {
         var list = equipmentList.filter { item ->
@@ -110,13 +115,13 @@ fun EquipmentScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp)
             ) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Rechercher tracteur, motoculteur, ville...") },
-                    leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
+                    placeholder = { Text("Rechercher tracteur, motoculteur, ville...", fontSize = 14.sp) },
+                    leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
@@ -125,57 +130,76 @@ fun EquipmentScreen(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("equipment_search_field")
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Offer Type & Proximity Quick Filter Chips
-                Row(
+                LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FilterChip(
-                        selected = selectedOfferType == null,
-                        onClick = { selectedOfferType = null },
-                        label = { Text("Tout") }
-                    )
-                    FilterChip(
-                        selected = selectedOfferType == OfferType.RENT,
-                        onClick = { selectedOfferType = OfferType.RENT },
-                        label = { Text("🚜 À Louer") }
-                    )
-                    FilterChip(
-                        selected = selectedOfferType == OfferType.SALE,
-                        onClick = { selectedOfferType = OfferType.SALE },
-                        label = { Text("🏷️ À Vendre") }
-                    )
-                    FilterChip(
-                        selected = sortByProximity,
-                        onClick = { sortByProximity = !sortByProximity },
-                        label = { Text("📍 Plus proches") },
-                        leadingIcon = {
-                            Icon(Icons.Default.NearMe, contentDescription = null, modifier = Modifier.size(14.dp))
-                        }
-                    )
+                    item {
+                        FilterChip(
+                            selected = selectedOfferType == null,
+                            onClick = { selectedOfferType = null },
+                            label = { Text("Tout", fontSize = 12.sp) }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = selectedOfferType == OfferType.RENT,
+                            onClick = { selectedOfferType = OfferType.RENT },
+                            label = { Text("🚜 À Louer", fontSize = 12.sp) }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = selectedOfferType == OfferType.SALE,
+                            onClick = { selectedOfferType = OfferType.SALE },
+                            label = { Text("🏷️ À Vendre", fontSize = 12.sp) }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = sortByProximity,
+                            onClick = { sortByProximity = !sortByProximity },
+                            label = { Text("📍 Proximité", fontSize = 12.sp) },
+                            leadingIcon = {
+                                Icon(Icons.Default.NearMe, contentDescription = null, modifier = Modifier.size(13.dp))
+                            }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = false,
+                            onClick = {
+                                roiSelectedEquipment = null
+                                showRoiCalculator = true
+                            },
+                            label = { Text("📊 Rentabilité", fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(containerColor = MintLight, labelColor = ForestGreenDark)
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 // Category Scroll
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     items(EquipmentCategory.entries) { cat ->
                         FilterChip(
                             selected = selectedCategory == cat,
                             onClick = { selectedCategory = cat },
-                            label = { Text(cat.label) }
+                            label = { Text(cat.label, fontSize = 12.sp) }
                         )
                     }
                 }
@@ -489,10 +513,88 @@ fun EquipmentScreen(
                                     )
                                 }
                             }
+
+                            Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+                            // Group-Booking (Location Partagée entre voisins)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Icon(imageVector = Icons.Default.Groups, contentDescription = null, tint = ForestGreenPrimary, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Column {
+                                        Text(
+                                            text = "Location Groupée (Co-partage)",
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                        Text(
+                                            text = "Divisez les frais avec des agriculteurs voisins",
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        )
+                                    }
+                                }
+                                Switch(
+                                    checked = isGroupBooking,
+                                    onCheckedChange = { isGroupBooking = it },
+                                    colors = SwitchDefaults.colors(checkedThumbColor = ForestGreenPrimary)
+                                )
+                            }
+
+                            if (isGroupBooking) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = "Nombre d'agriculteurs : $groupPartnersCount", style = MaterialTheme.typography.bodySmall)
+                                    Row {
+                                        listOf(2, 3, 4).forEach { count ->
+                                            FilterChip(
+                                                selected = groupPartnersCount == count,
+                                                onClick = { groupPartnersCount = count },
+                                                label = { Text("$count", fontSize = 11.sp) },
+                                                modifier = Modifier.padding(horizontal = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                val perPerson = calculatedTotal / groupPartnersCount
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MintLight,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "🤝 Part individuelle : ${formatCfa(perPerson)} / agriculteur pour $bookingDurationDays j.",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = ForestGreenDark),
+                                        modifier = Modifier.padding(8.dp)
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Calculateur Rentabilité Button inside modal
+                    OutlinedButton(
+                        onClick = {
+                            roiSelectedEquipment = eq
+                            showRoiCalculator = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Calculate, contentDescription = null, tint = ForestGreenPrimary)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("📊 Calculer la Rentabilité & Rendement Hectare", style = MaterialTheme.typography.labelLarge)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     OutlinedTextField(
                         value = renterNameInput,
@@ -564,6 +666,16 @@ fun EquipmentScreen(
                     purpose = eq.title,
                     receiptCode = "REC-AGRI-${(1000..9999).random()}"
                 )
+            }
+        )
+    }
+
+    if (showRoiCalculator) {
+        EquipmentRoiCalculatorDialog(
+            presetEquipment = roiSelectedEquipment,
+            onDismiss = {
+                showRoiCalculator = false
+                roiSelectedEquipment = null
             }
         )
     }
@@ -764,6 +876,292 @@ fun EquipmentFullCard(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EquipmentRoiCalculatorDialog(
+    presetEquipment: EquipmentItem?,
+    onDismiss: () -> Unit
+) {
+    var selectedCrop by remember { mutableStateOf("Maïs (Zea mays)") }
+    var hectares by remember { mutableStateOf(5) }
+    var machineType by remember {
+        mutableStateOf(
+            if (presetEquipment?.category == EquipmentCategory.TRACTOR) "Tracteur 4x4 + Charrue"
+            else if (presetEquipment?.category == EquipmentCategory.HARVESTER) "Moissonneuse-Batteuse"
+            else if (presetEquipment?.category == EquipmentCategory.IRRIGATION) "Pompe Solaire Goutte-à-goutte"
+            else "Motoculteur & Semoir Polyvalent"
+        )
+    }
+
+    val crops = listOf("Maïs (Zea mays)", "Riz Irrigué", "Manioc", "Cacao", "Maraîchage (Piment/Tomate)")
+    val machines = listOf(
+        "Tracteur 4x4 + Charrue",
+        "Motoculteur & Semoir Polyvalent",
+        "Moissonneuse-Batteuse",
+        "Pompe Solaire Goutte-à-goutte"
+    )
+
+    // ROI Computations based on rural Ivory Coast agricultural research (ANADER / CNRA baseline)
+    val manualDaysPerHa = when (machineType) {
+        "Tracteur 4x4 + Charrue" -> 14
+        "Motoculteur & Semoir Polyvalent" -> 8
+        "Moissonneuse-Batteuse" -> 20
+        else -> 10
+    }
+    val machineHoursPerHa = when (machineType) {
+        "Tracteur 4x4 + Charrue" -> 2.5
+        "Motoculteur & Semoir Polyvalent" -> 5.0
+        "Moissonneuse-Batteuse" -> 1.5
+        else -> 3.0
+    }
+
+    val manualLaborCostPerDay = 3500L // FCFA/jour/ouvrier
+    val totalManualLaborCost = manualDaysPerHa * manualLaborCostPerDay * hectares
+
+    val machineCostPerHa = when (machineType) {
+        "Tracteur 4x4 + Charrue" -> 25000L
+        "Motoculteur & Semoir Polyvalent" -> 15000L
+        "Moissonneuse-Batteuse" -> 35000L
+        else -> 12000L
+    }
+    val totalMachineCost = machineCostPerHa * hectares
+    val netSavingsCfa = totalManualLaborCost - totalMachineCost
+
+    val yieldGainPercent = when (selectedCrop) {
+        "Maïs (Zea mays)" -> 28
+        "Riz Irrigué" -> 35
+        "Manioc" -> 22
+        "Cacao" -> 18
+        else -> 30
+    }
+
+    val baseYieldValCfaPerHa = when (selectedCrop) {
+        "Maïs (Zea mays)" -> 450000L
+        "Riz Irrigué" -> 600000L
+        "Manioc" -> 400000L
+        "Cacao" -> 850000L
+        else -> 700000L
+    }
+    val estimatedYieldSurplusCfa = (baseYieldValCfaPerHa * yieldGainPercent / 100) * hectares
+    val totalFinancialBenefitCfa = netSavingsCfa + estimatedYieldSurplusCfa
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MintLight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Calculate,
+                                contentDescription = null,
+                                tint = ForestGreenPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Calculateur Rentabilité",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                text = "Gains économiques & Rendement ha",
+                                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            )
+                        }
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fermer")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Crop selector
+                Text(
+                    text = "Culture principale :",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(crops) { crop ->
+                        FilterChip(
+                            selected = selectedCrop == crop,
+                            onClick = { selectedCrop = crop },
+                            label = { Text(crop, fontSize = 11.sp) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Hectares Slider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Superficie de votre parcelle :",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = ForestGreenPrimary
+                    ) {
+                        Text(
+                            text = "$hectares Hectares",
+                            style = MaterialTheme.typography.labelMedium.copy(color = Color.White, fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+                Slider(
+                    value = hectares.toFloat(),
+                    onValueChange = { hectares = it.toInt() },
+                    valueRange = 1f..30f,
+                    steps = 28,
+                    colors = SliderDefaults.colors(
+                        thumbColor = ForestGreenPrimary,
+                        activeTrackColor = ForestGreenPrimary
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Machine Selector
+                Text(
+                    text = "Type de mécanisation :",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(machines) { m ->
+                        FilterChip(
+                            selected = machineType == m,
+                            onClick = { machineType = m },
+                            label = { Text(m, fontSize = 11.sp) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Results Summary Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MintLight,
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, ForestGreenPrimary.copy(alpha = 0.4f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Bénéfice Net Estimé",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = ForestGreenDark)
+                            )
+                            Text(
+                                text = "+${formatCfa(totalFinancialBenefitCfa)}",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = ForestGreenDark
+                                )
+                            )
+                        }
+
+                        Divider(modifier = Modifier.padding(vertical = 10.dp), color = ForestGreenPrimary.copy(alpha = 0.2f))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("⏱️ Gain de temps", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                Text(
+                                    text = "${manualDaysPerHa * hectares} j. → ${(machineHoursPerHa * hectares).toInt()} h.",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = ForestGreenDark)
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("📈 Gain de Rendement", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                Text(
+                                    text = "+$yieldGainPercent% (+${formatCfa(estimatedYieldSurplusCfa)})",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = ForestGreenDark)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("💰 Économie Main d'œuvre", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                Text(
+                                    text = formatCfa(netSavingsCfa.coerceAtLeast(0L)),
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = HarvestGold)
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("🌱 Empreinte Carbone", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                Text(
+                                    text = "-32% CO2 / tonne récoltée",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = ForestGreenPrimary)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreenPrimary),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Appliquer ce plan & Trouver le matériel")
                 }
             }
         }

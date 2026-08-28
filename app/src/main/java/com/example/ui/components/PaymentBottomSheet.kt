@@ -67,6 +67,8 @@ fun PaymentBottomSheet(
 
     val fee = if (selectedProvider == PaymentProvider.WAVE) (totalAmountCfa * 0.01).toLong() else 0L
     val grandTotal = totalAmountCfa + fee
+    var enableEscrowProtection by remember { mutableStateOf(true) }
+    var escrowSecurityCode by remember { mutableStateOf("ESCROW-${(1000..9999).random()}") }
 
     ModalBottomSheet(
         onDismissRequest = { if (!isProcessing) onDismiss() },
@@ -316,6 +318,77 @@ fun PaymentBottomSheet(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            // AgriShop Escrow Séquestre Protection Guarantee
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = if (enableEscrowProtection) Color(0xFFF1F8F5) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                border = androidx.compose.foundation.BorderStroke(
+                    width = if (enableEscrowProtection) 1.5.dp else 1.dp,
+                    color = if (enableEscrowProtection) ForestGreenPrimary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(if (enableEscrowProtection) ForestGreenPrimary else Color.Gray),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Shield,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Garantie Séquestre (Escrow)",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = ForestGreenDark)
+                                )
+                                Text(
+                                    text = "Fonds bloqués jusqu'à réception au champ",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = enableEscrowProtection,
+                            onCheckedChange = { enableEscrowProtection = it },
+                            colors = SwitchDefaults.colors(checkedThumbColor = ForestGreenPrimary, checkedTrackColor = MintLight)
+                        )
+                    }
+
+                    if (enableEscrowProtection) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.White.copy(alpha = 0.8f)
+                        ) {
+                            Text(
+                                text = "🔒 Le vendeur/loueur ne sera crédité qu'après votre confirmation de livraison conforme.",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp, color = ForestGreenDark, fontWeight = FontWeight.Medium),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Information banner about CinetPay API
             Surface(

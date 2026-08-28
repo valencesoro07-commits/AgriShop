@@ -60,7 +60,7 @@ object NotificationHelper {
 
             val ecoChannel = NotificationChannel(
                 CHANNEL_ECO,
-                "Éco-Points & Hub Compost",
+                "Éco-Points & Compost",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Crédits d'éco-points et collectes de résidus"

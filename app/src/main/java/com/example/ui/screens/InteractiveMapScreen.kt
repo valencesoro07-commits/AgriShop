@@ -89,7 +89,7 @@ enum class MapFilterCategory(val label: String, val icon: androidx.compose.ui.gr
     ALL("Tout afficher", Icons.Default.Public),
     EQUIPMENT("Machines & Engins", Icons.Default.Agriculture),
     PRODUCE("Vivriers & Récoltes", Icons.Default.Grass),
-    COMPOST("Hub Compost", Icons.Default.Recycling)
+    COMPOST("Compost", Icons.Default.Recycling)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -683,7 +683,7 @@ fun AddListingDialog(
                                     id = "comp_${UUID.randomUUID().toString().take(6)}",
                                     title = compTitle.ifBlank { "Compost Bio" },
                                     category = compCategory,
-                                    producerName = compProducerName.ifBlank { "Hub Compost" },
+                                    producerName = compProducerName.ifBlank { "Compost" },
                                     location = compLocation,
                                     latitude = coords.first,
                                     longitude = coords.second,

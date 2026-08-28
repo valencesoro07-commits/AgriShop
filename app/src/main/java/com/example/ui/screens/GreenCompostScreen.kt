@@ -126,7 +126,7 @@ fun GreenCompostScreen(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Hub Compost & Recyclage Vert",
+                    text = "Compost & Recyclage Vert",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, color = Color.White)
                 )
                 Text(

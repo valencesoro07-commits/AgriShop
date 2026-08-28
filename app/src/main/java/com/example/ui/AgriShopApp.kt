@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -38,7 +39,7 @@ enum class AppDestination(val label: String, val icon: androidx.compose.ui.graph
     EQUIPMENT("Matériel", Icons.Default.Agriculture),
     RENTALS("Locations", Icons.Default.Assignment),
     PRODUCE("Récoltes", Icons.Default.Grass),
-    COMPOST("Hub Compost", Icons.Default.Recycling)
+    COMPOST("Compost", Icons.Default.Recycling)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,6 +48,9 @@ fun AgriShopApp(
     viewModel: AgriViewModel
 ) {
     val isUserAuthenticated by viewModel.isUserAuthenticated.collectAsStateWithLifecycle()
+    val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle()
+    val initialRegisterMode by viewModel.initialRegisterMode.collectAsStateWithLifecycle()
+    val registerReason by viewModel.registerReason.collectAsStateWithLifecycle()
     val authLoading by viewModel.authLoading.collectAsStateWithLifecycle()
     val authError by viewModel.authError.collectAsStateWithLifecycle()
 
@@ -61,6 +65,19 @@ fun AgriShopApp(
     var showTopMenu by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showAdvisorDialog by remember { mutableStateOf(false) }
+
+    // Guest protection dialog
+    var showGuestPromptDialog by remember { mutableStateOf(false) }
+    var guestPromptAction by remember { mutableStateOf("") }
+
+    fun checkAuthOrPrompt(actionName: String, onProceed: () -> Unit) {
+        if (isGuestMode) {
+            guestPromptAction = actionName
+            showGuestPromptDialog = true
+        } else {
+            onProceed()
+        }
+    }
 
     val equipmentList by viewModel.equipmentList.collectAsStateWithLifecycle()
     val produceList by viewModel.produceList.collectAsStateWithLifecycle()
@@ -85,6 +102,8 @@ fun AgriShopApp(
         AuthScreen(
             isLoading = authLoading,
             errorMessage = authError,
+            initialRegisterMode = initialRegisterMode,
+            registerReason = registerReason,
             onSignInWithEmail = { email, pass ->
                 viewModel.signInWithEmail(email, pass)
             },
@@ -117,16 +136,24 @@ fun AgriShopApp(
             currentCity = currentCity,
             onNavigateBack = { showMapScreen = false },
             onBookEquipment = { eq, name, phone, days, op, prov, payPhone ->
-                viewModel.bookEquipment(eq, name, phone, days, op, prov, payPhone)
+                checkAuthOrPrompt("louer cet équipement agricole") {
+                    viewModel.bookEquipment(eq, name, phone, days, op, prov, payPhone)
+                }
             },
             onPurchaseEquipment = { eq, prov, phone ->
-                viewModel.purchaseEquipment(eq, prov, phone)
+                checkAuthOrPrompt("acheter ce matériel agricole") {
+                    viewModel.purchaseEquipment(eq, prov, phone)
+                }
             },
             onBuyProduce = { prod, qty, prov, phone ->
-                viewModel.buyProduce(prod, qty, prov, phone)
+                checkAuthOrPrompt("acheter ces récoltes") {
+                    viewModel.buyProduce(prod, qty, prov, phone)
+                }
             },
             onBuyCompost = { comp, qty, prov, phone ->
-                viewModel.buyCompost(comp, qty, prov, phone)
+                checkAuthOrPrompt("acheter du compost ou fertilisant") {
+                    viewModel.buyCompost(comp, qty, prov, phone)
+                }
             }
         )
     } else if (showPaymentsScreen) {
@@ -142,7 +169,9 @@ fun AgriShopApp(
             currentCity = currentCity,
             onNavigateBack = { showWasteProgramScreen = false },
             onDeclareWaste = { name, phone, loc, type, wt, date, slot, mode, notes ->
-                viewModel.declareWasteCollection(name, phone, loc, type, wt, date, slot, mode, notes)
+                checkAuthOrPrompt("déposer ou déclarer des biodéchets") {
+                    viewModel.declareWasteCollection(name, phone, loc, type, wt, date, slot, mode, notes)
+                }
             },
             onUpdateStatus = { reqId, status ->
                 viewModel.updateWasteCollectionStatus(reqId, status)
@@ -161,15 +190,16 @@ fun AgriShopApp(
                         ) {
                             Surface(
                                 modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(10.dp)),
-                                shape = RoundedCornerShape(10.dp),
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .shadow(4.dp, RoundedCornerShape(12.dp)),
+                                shape = RoundedCornerShape(12.dp),
                                 color = Color.White
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(2.dp),
+                                        .padding(3.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Image(
@@ -717,12 +747,20 @@ fun AgriShopApp(
                         EquipmentScreen(
                             equipmentList = equipmentList,
                             userCoordinates = userCoordinates,
-                            onAddListingClick = { showAddListingModal = true },
+                            onAddListingClick = {
+                                checkAuthOrPrompt("publier une annonce de matériel agricole") {
+                                    showAddListingModal = true
+                                }
+                            },
                             onBookEquipment = { eq, name, phone, days, op, prov, payPhone ->
-                                viewModel.bookEquipment(eq, name, phone, days, op, prov, payPhone)
+                                checkAuthOrPrompt("louer cet équipement agricole") {
+                                    viewModel.bookEquipment(eq, name, phone, days, op, prov, payPhone)
+                                }
                             },
                             onPurchaseEquipment = { eq, prov, phone ->
-                                viewModel.purchaseEquipment(eq, prov, phone)
+                                checkAuthOrPrompt("acheter ce matériel agricole") {
+                                    viewModel.purchaseEquipment(eq, prov, phone)
+                                }
                             }
                         )
                     }
@@ -742,10 +780,20 @@ fun AgriShopApp(
                             produceList = produceList,
                             forumPosts = forumPosts,
                             userCoordinates = userCoordinates,
-                            onAddProduceClick = { showAddListingModal = true },
-                            onAddForumPost = { viewModel.addForumPost(it) },
+                            onAddProduceClick = {
+                                checkAuthOrPrompt("vendre et publier vos récoltes agricoles") {
+                                    showAddListingModal = true
+                                }
+                            },
+                            onAddForumPost = { post ->
+                                checkAuthOrPrompt("publier dans le forum communautaire") {
+                                    viewModel.addForumPost(post)
+                                }
+                            },
                             onBuyProduce = { prod, qty, prov, phone ->
-                                viewModel.buyProduce(prod, qty, prov, phone)
+                                checkAuthOrPrompt("acheter ces récoltes") {
+                                    viewModel.buyProduce(prod, qty, prov, phone)
+                                }
                             }
                         )
                     }
@@ -756,10 +804,14 @@ fun AgriShopApp(
                             wasteRequests = wasteRequests,
                             userCoordinates = userCoordinates,
                             onRequestPickup = { name, phone, loc, type, wt, date, notes ->
-                                viewModel.requestWastePickup(name, phone, loc, type, wt, date, notes)
+                                checkAuthOrPrompt("demander un ramassage de biodéchets") {
+                                    viewModel.requestWastePickup(name, phone, loc, type, wt, date, notes)
+                                }
                             },
                             onBuyCompost = { comp, qty, prov, phone ->
-                                viewModel.buyCompost(comp, qty, prov, phone)
+                                checkAuthOrPrompt("acheter du compost ou fertilisant") {
+                                    viewModel.buyCompost(comp, qty, prov, phone)
+                                }
                             },
                             onNavigateToAi = { showAiScreen = true },
                             onOpenWasteProgram = { showWasteProgramScreen = true },
@@ -832,6 +884,100 @@ fun AgriShopApp(
     if (showAdvisorDialog) {
         AdvisorCallDialog(
             onDismiss = { showAdvisorDialog = false }
+        )
+    }
+
+    // Guest Visitor Authentication Interceptor Dialog
+    if (showGuestPromptDialog) {
+        AlertDialog(
+            onDismissRequest = { showGuestPromptDialog = false },
+            icon = {
+                Surface(
+                    shape = CircleShape,
+                    color = MintLight,
+                    modifier = Modifier.size(54.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.LockPerson,
+                            contentDescription = null,
+                            tint = ForestGreenPrimary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            },
+            title = {
+                Text(
+                    text = "Inscription Requise",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Pour $guestPromptAction sur AgriShop, veuillez vous inscrire ou vous connecter afin de sécuriser vos transactions et la livraison.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        color = AmberLight,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Stars,
+                                contentDescription = null,
+                                tint = HarvestGold,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "+500 Éco-Points offerts dès votre inscription !",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF8D5B00)
+                                )
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showGuestPromptDialog = false
+                        viewModel.redirectToRegister("Pour $guestPromptAction, créez votre compte en quelques secondes.")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreenPrimary),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("S'inscrire / Créer un compte", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showGuestPromptDialog = false
+                            viewModel.redirectToLogin("Pour $guestPromptAction, veuillez vous connecter.")
+                        }
+                    ) {
+                        Text("Se connecter")
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    TextButton(onClick = { showGuestPromptDialog = false }) {
+                        Text("Plus tard")
+                    }
+                }
+            }
         )
     }
 }

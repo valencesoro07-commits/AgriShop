@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -60,6 +62,7 @@ fun AgriAiAssistantScreen(
     // Text To Speech instance
     var tts: TextToSpeech? by remember { mutableStateOf(null) }
     var isSpeaking by remember { mutableStateOf(false) }
+    var showScanDiagnosisDialog by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         val ttsInstance = TextToSpeech(context) { status ->
@@ -231,6 +234,21 @@ fun AgriAiAssistantScreen(
                         text = "IA Vocale & Multilingue (FR • Dioula • Baoulé)",
                         style = MaterialTheme.typography.labelSmall.copy(color = MintLight)
                     )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = AmberSun,
+                    modifier = Modifier.clickable { showScanDiagnosisDialog = true }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = "Scanner", tint = Color.Black, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Diagnostic Feuille", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 10.sp))
+                    }
                 }
 
                 if (isSpeaking) {
@@ -480,6 +498,271 @@ fun AgriAiAssistantScreen(
                         contentDescription = "Envoyer",
                         tint = Color.White
                     )
+                }
+            }
+        }
+    }
+
+    if (showScanDiagnosisDialog) {
+        PlantDiseaseScanDialog(
+            onDismiss = { showScanDiagnosisDialog = false },
+            onSelectDiagnosis = { diagnosisText ->
+                showScanDiagnosisDialog = false
+                sendPrompt(diagnosisText)
+            }
+        )
+    }
+}
+
+data class CropDiseaseSample(
+    val crop: String,
+    val disease: String,
+    val emoji: String,
+    val severity: String,
+    val symptoms: String,
+    val organicRemedy: String,
+    val agriShopEquipment: String
+)
+
+@Composable
+fun PlantDiseaseScanDialog(
+    onDismiss: () -> Unit,
+    onSelectDiagnosis: (String) -> Unit
+) {
+    val samples = listOf(
+        CropDiseaseSample(
+            crop = "Cacao (Theobroma)",
+            disease = "Pourriture Brune des Cabosses (Phytophthora)",
+            emoji = "🍫",
+            severity = "Élevée (Perte jusqu'à 60%)",
+            symptoms = "Taches brunes sur les cabosses avec odeur acide, dessèchement prématuré.",
+            organicRemedy = "Élagage d'aération, ramassage des cabosses infectées, pulvérisation de bouillie bordelaise ou purin de prêle.",
+            agriShopEquipment = "Pulvérisateur dorsal à pression + Compost riche en Trichoderma"
+        ),
+        CropDiseaseSample(
+            crop = "Maïs (Zea mays)",
+            disease = "Chenille Légionnaire d'Automne (Spodoptera)",
+            emoji = "🌽",
+            severity = "Critique",
+            symptoms = "Feuilles trouées 'en coup de fusil', sciure végétale au cœur du cornet.",
+            organicRemedy = "Application de cendre de bois au cœur, biopesticide à base de Bacillus thuringiensis (Bt) ou huile de neem.",
+            agriShopEquipment = "Pulvérisateur manuel à buse conique + Bio-fertilisant azoté"
+        ),
+        CropDiseaseSample(
+            crop = "Manioc (Manihot)",
+            disease = "Mosaïque Africaine du Manioc (CMD)",
+            emoji = "🍠",
+            severity = "Moyenne à Élevée",
+            symptoms = "Feuilles déformées avec marbrures vert clair et jaunes, rabougrissement.",
+            organicRemedy = "Utilisation exclusive de boutures saines certifiées, arrachage précoce des pieds infectés.",
+            agriShopEquipment = "Boutures assainies certifiées + Compost mûr de biomasse"
+        ),
+        CropDiseaseSample(
+            crop = "Maraîchage (Tomate/Piment)",
+            disease = "Flétrissement Bactérien & Mildiou",
+            emoji = "🍅",
+            severity = "Élevée en saison des pluies",
+            symptoms = "Feuilles pendantes sans jaunissement préalable, tige creuse et noircie.",
+            organicRemedy = "Rotation avec graminées, apport massif de compost enrichi, paillage organique propre.",
+            agriShopEquipment = "Système d'irrigation goutte-à-goutte solaire + Paillis végétal"
+        ),
+        CropDiseaseSample(
+            crop = "Santé du Sol (Parcelle)",
+            disease = "Acidité & Carence en Matière Organique",
+            emoji = "🧪",
+            severity = "Sol dégradé (Rendement -40%)",
+            symptoms = "Sol compacté, faible rétention d'eau, chlorose foliaire généralisée.",
+            organicRemedy = "Apport de 3 à 5 tonnes de Compost Organique Ennobli AgriShop par hectare.",
+            agriShopEquipment = "Compost Bio Haute Performance + Motoculteur d'enfouissement"
+        )
+    )
+
+    var selectedSample by remember { mutableStateOf(samples.first()) }
+    var isSimulatingScan by remember { mutableStateOf(false) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MintLight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = null,
+                                tint = ForestGreenPrimary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Scanner Vision IA",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                text = "Diagnostic Santé des Plantes & Sols",
+                                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            )
+                        }
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fermer")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Sélectionnez une culture à analyser ou capturez une photo au champ :",
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Crop chips
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(samples) { sample ->
+                        val isSelected = selectedSample == sample
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) ForestGreenPrimary else MintLight,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { selectedSample = sample }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(sample.emoji, fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = sample.crop.takeWhile { it != '(' }.trim(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = if (isSelected) Color.White else ForestGreenDark,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Diagnostic Result Box
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = LightSurfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = selectedSample.crop,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = ForestGreenDark)
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (selectedSample.severity.contains("Critique")) Color(0xFFFFEBEE) else AmberLight
+                            ) {
+                                Text(
+                                    text = selectedSample.severity,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = if (selectedSample.severity.contains("Critique")) Color(0xFFC62828) else HarvestGold,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "Pathologie détectée : ${selectedSample.disease}",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold, color = Color(0xFF2E312F))
+                        )
+
+                        Divider(modifier = Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+                        Text(
+                            text = "🔍 Symptômes observés :",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = selectedSample.symptoms,
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "🌿 Remède Bio & Agroécologique :",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = ForestGreenPrimary)
+                        )
+                        Text(
+                            text = selectedSample.organicRemedy,
+                            style = MaterialTheme.typography.bodySmall.copy(color = ForestGreenDark)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "🚜 Équipement & Intrant recommandé AgriShop :",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = HarvestGold)
+                        )
+                        Text(
+                            text = selectedSample.agriShopEquipment,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        onSelectDiagnosis("IA Diagnostic : Ma parcelle de ${selectedSample.crop} est touchée par ${selectedSample.disease}. Quels sont les dosages précis et les conseils pour appliquer ${selectedSample.organicRemedy} avec du matériel AgriShop ?")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreenPrimary),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Approfondir le traitement avec l'IA")
                 }
             }
         }

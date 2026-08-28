@@ -35,6 +35,15 @@ class AgriViewModel(application: Application) : AndroidViewModel(application) {
     private val _isUserAuthenticated = MutableStateFlow(authService.isUserLoggedIn)
     val isUserAuthenticated: StateFlow<Boolean> = _isUserAuthenticated.asStateFlow()
 
+    private val _isGuestMode = MutableStateFlow(!authService.isUserLoggedIn)
+    val isGuestMode: StateFlow<Boolean> = _isGuestMode.asStateFlow()
+
+    private val _initialRegisterMode = MutableStateFlow(false)
+    val initialRegisterMode: StateFlow<Boolean> = _initialRegisterMode.asStateFlow()
+
+    private val _registerReason = MutableStateFlow<String?>(null)
+    val registerReason: StateFlow<String?> = _registerReason.asStateFlow()
+
     private val _authLoading = MutableStateFlow(false)
     val authLoading: StateFlow<Boolean> = _authLoading.asStateFlow()
 
@@ -62,6 +71,8 @@ class AgriViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.seedInitialDataIfEmpty()
             if (authService.isUserLoggedIn) {
+                _isGuestMode.value = false
+                _isUserAuthenticated.value = true
                 authService.getLoggedInUserProfile()?.let { loggedProfile ->
                     repository.saveUserProfile(loggedProfile)
                     _selectedCity.value = loggedProfile.region
@@ -122,6 +133,9 @@ class AgriViewModel(application: Application) : AndroidViewModel(application) {
                     _selectedCity.value = result.userProfile.region
                     _userCoordinates.value = Pair(result.userProfile.latitude, result.userProfile.longitude)
                     _isUserAuthenticated.value = true
+                    _isGuestMode.value = false
+                    _registerReason.value = null
+                    _initialRegisterMode.value = false
                     _authLoading.value = false
                     repository.addNotification(
                         AppNotification(
@@ -158,6 +172,9 @@ class AgriViewModel(application: Application) : AndroidViewModel(application) {
                     _selectedCity.value = result.userProfile.region
                     _userCoordinates.value = Pair(result.userProfile.latitude, result.userProfile.longitude)
                     _isUserAuthenticated.value = true
+                    _isGuestMode.value = false
+                    _registerReason.value = null
+                    _initialRegisterMode.value = false
                     _authLoading.value = false
                     repository.addNotification(
                         AppNotification(
@@ -187,6 +204,9 @@ class AgriViewModel(application: Application) : AndroidViewModel(application) {
                     _selectedCity.value = result.userProfile.region
                     _userCoordinates.value = Pair(result.userProfile.latitude, result.userProfile.longitude)
                     _isUserAuthenticated.value = true
+                    _isGuestMode.value = false
+                    _registerReason.value = null
+                    _initialRegisterMode.value = false
                     _authLoading.value = false
                 }
                 is AuthResult.Error -> {
@@ -200,14 +220,34 @@ class AgriViewModel(application: Application) : AndroidViewModel(application) {
     fun guestLogin() {
         viewModelScope.launch {
             _isUserAuthenticated.value = true
+            _isGuestMode.value = true
+            _registerReason.value = null
+            _initialRegisterMode.value = false
             _authError.value = null
         }
+    }
+
+    fun redirectToRegister(reason: String = "Veuillez créer votre compte pour acheter, louer ou vendre sur AgriShop.") {
+        _registerReason.value = reason
+        _initialRegisterMode.value = true
+        _isUserAuthenticated.value = false
+        _isGuestMode.value = false
+    }
+
+    fun redirectToLogin(reason: String? = null) {
+        _registerReason.value = reason
+        _initialRegisterMode.value = false
+        _isUserAuthenticated.value = false
+        _isGuestMode.value = false
     }
 
     fun logout() {
         viewModelScope.launch {
             authService.signOut()
             _isUserAuthenticated.value = false
+            _isGuestMode.value = false
+            _registerReason.value = null
+            _initialRegisterMode.value = false
         }
     }
 

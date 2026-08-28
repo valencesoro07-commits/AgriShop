@@ -55,6 +55,8 @@ import kotlinx.coroutines.launch
 fun AuthScreen(
     isLoading: Boolean,
     errorMessage: String?,
+    initialRegisterMode: Boolean = false,
+    registerReason: String? = null,
     onSignInWithEmail: (email: String, password: String) -> Unit,
     onSignUpWithEmail: (email: String, password: String, fullName: String, phone: String, role: UserRole, region: String) -> Unit,
     onSignInWithGoogle: (idToken: String, email: String?, name: String?, photoUrl: String?) -> Unit,
@@ -65,7 +67,7 @@ fun AuthScreen(
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
 
-    var isRegisterMode by remember { mutableStateOf(false) }
+    var isRegisterMode by remember(initialRegisterMode) { mutableStateOf(initialRegisterMode) }
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -148,7 +150,7 @@ fun AuthScreen(
                     colors = listOf(
                         ForestGreenDark,
                         ForestGreenPrimary,
-                        Color(0xFF1B4D3E),
+                        ForestGreenMedium.copy(alpha = 0.85f),
                         MaterialTheme.colorScheme.background
                     ),
                     startY = 0f,
@@ -166,20 +168,20 @@ fun AuthScreen(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Prominent Official App Brand Logo
+            // Prominent Official App Brand Logo (Enlarged)
             Surface(
                 modifier = Modifier
-                    .size(150.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .shadow(12.dp, RoundedCornerShape(32.dp))
-                    .border(3.dp, Color.White.copy(alpha = 0.9f), RoundedCornerShape(32.dp)),
-                shape = RoundedCornerShape(32.dp),
+                    .size(175.dp)
+                    .clip(RoundedCornerShape(36.dp))
+                    .shadow(16.dp, RoundedCornerShape(36.dp))
+                    .border(3.5.dp, Color.White.copy(alpha = 0.95f), RoundedCornerShape(36.dp)),
+                shape = RoundedCornerShape(36.dp),
                 color = Color.White
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(10.dp),
+                        .padding(12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
@@ -291,6 +293,38 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
+                    // Redirect reason banner for visitors
+                    if (!registerReason.isNullOrBlank()) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 14.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MintLight
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = ForestGreenPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = registerReason,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = ForestGreenDark,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+
                     // Error Message Banner
                     if (!errorMessage.isNullOrBlank()) {
                         Surface(
@@ -320,7 +354,7 @@ fun AuthScreen(
                         }
                     }
 
-                    // Google Sign-In Button
+                    // Google Sign-In Button with Official Google Logo
                     OutlinedButton(
                         onClick = { launchGoogleSignIn() },
                         modifier = Modifier
@@ -337,13 +371,12 @@ fun AuthScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = "Google",
-                                tint = Color(0xFF4285F4),
-                                modifier = Modifier.size(24.dp)
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_google_logo),
+                                contentDescription = "Google Logo",
+                                modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = if (isRegisterMode) "S'inscrire avec Google" else "Continuer avec Google",
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),

@@ -274,7 +274,7 @@ fun HomeScreen(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color(0x33000000), Color(0xCC0B2915), Color(0xF5071C0E))
+                            colors = listOf(Color(0x20000000), Color(0xB80A3B2C), Color(0xF0082E22))
                         )
                     )
             )
@@ -599,7 +599,7 @@ fun HomeScreen(
         SectionHeader(
             title = "Compost & Bio-Fertilisants Ennoblis",
             subtitle = "Issus du recyclage agroécologique certifié",
-            actionText = "Voir le Hub",
+            actionText = "Voir le Compost",
             onActionClick = onNavigateToCompost
         )
 
