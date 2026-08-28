@@ -1,0 +1,7 @@
+{
+  "name": "AgriShop",
+  "description": "Plateforme agricole complète : vente et location d'équipements, mise en relation producteurs, paiements Mobile Money (Orange, MTN, Moov, Wave) et hub de recyclage organique en compost.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
