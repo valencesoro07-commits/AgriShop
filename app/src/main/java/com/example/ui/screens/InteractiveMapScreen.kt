@@ -106,6 +106,7 @@ fun InteractiveMapScreen(
     onBuyProduce: (ProduceItem, Int, PaymentProvider, String) -> Unit,
     onBuyCompost: (CompostItem, Int, PaymentProvider, String) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var selectedCategory by remember { mutableStateOf(MapFilterCategory.ALL) }
     var maxDistanceKm by remember { mutableFloatStateOf(150f) } // Default max distance filter
     var selectedPin by remember { mutableStateOf<MapItemPin?>(null) }
@@ -360,25 +361,45 @@ fun InteractiveMapScreen(
 
                                     Spacer(modifier = Modifier.height(10.dp))
 
-                                    // Action Button to initiate transaction / booking
-                                    Button(
-                                        onClick = { paymentItem = pin },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(44.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = ForestGreenPrimary)
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = when (pin) {
-                                                is MapItemPin.Equipment -> "Réserver / Louer cet engin"
-                                                is MapItemPin.Produce -> "Acheter cette récolte"
-                                                is MapItemPin.Compost -> "Commander ce fertilisant"
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        // Button to launch real Google Maps navigation
+                                        OutlinedButton(
+                                            onClick = {
+                                                com.example.util.LocationManager.openGoogleMapsItinerary(
+                                                    context = context,
+                                                    destinationLat = pin.latitude,
+                                                    destinationLng = pin.longitude
+                                                )
                                             },
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                            modifier = Modifier.weight(1f).height(44.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, ForestGreenPrimary)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Directions, contentDescription = null, modifier = Modifier.size(18.dp), tint = ForestGreenPrimary)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Itinéraire", fontWeight = FontWeight.Bold, color = ForestGreenPrimary)
+                                        }
+
+                                        // Action Button to initiate transaction / booking
+                                        Button(
+                                            onClick = { paymentItem = pin },
+                                            modifier = Modifier
+                                                .weight(1.5f)
+                                                .height(44.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = ForestGreenPrimary)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = when (pin) {
+                                                    is MapItemPin.Equipment -> "Louer"
+                                                    is MapItemPin.Produce -> "Acheter"
+                                                    is MapItemPin.Compost -> "Commander"
+                                                },
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
                             }

@@ -274,6 +274,41 @@ class AgriViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateCurrentCity(city: String) = setUserCity(city)
 
+    fun refreshUserLocation() {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            val context = getApplication<Application>().applicationContext
+            val coords = com.example.util.LocationManager.getCurrentLocation(context)
+            if (coords != null) {
+                _userCoordinates.value = coords
+                val city = com.example.util.LocationManager.getCityName(context, coords.first, coords.second)
+                if (city != null) {
+                    _selectedCity.value = city
+                }
+                
+                currentUser.value?.let { user ->
+                    val updated = user.copy(
+                        latitude = coords.first,
+                        longitude = coords.second,
+                        region = city ?: user.region
+                    )
+                    repository.saveUserProfile(updated)
+                }
+                
+                repository.addNotification(
+                    AppNotification(
+                        id = "notif_${UUID.randomUUID().toString().take(6)}",
+                        title = "Localisation GPS à jour",
+                        message = "Vous êtes actuellement géolocalisé à ${city ?: "votre position actuelle"}.",
+                        type = NotificationType.NEW_LISTING,
+                        targetDestination = "MAP"
+                    )
+                )
+            }
+            _isSyncing.value = false
+        }
+    }
+
     fun saveUserProfile(name: String, phone: String, email: String, role: UserRole, region: String) {
         updateUserProfile(name, phone, email, role, region)
     }

@@ -92,16 +92,11 @@ fun EquipmentScreen(
                 contentColor = Color.White,
                 modifier = Modifier
                     .padding(bottom = 64.dp)
-                    .testTag("add_equipment_fab")
+                    .size(56.dp) // Reduced size
+                    .testTag("add_equipment_fab"),
+                shape = CircleShape // Circular shape for compactness
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Ajouter")
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Proposer du Matériel", style = MaterialTheme.typography.labelLarge)
-                }
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Proposer du Matériel")
             }
         }
     ) { paddingValues ->
@@ -110,99 +105,117 @@ fun EquipmentScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search & Filter Header
+            // Search & Filter Header - Reorganized and Compacted
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp)
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Rechercher tracteur, motoculteur, ville...", fontSize = 14.sp) },
-                    leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(imageVector = Icons.Default.Clear, contentDescription = "Effacer")
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("equipment_search_field")
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Offer Type & Proximity Quick Filter Chips
+                // 1. FILTERS (Tous + Tout) - AT THE VERY TOP
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     item {
                         FilterChip(
                             selected = selectedOfferType == null,
                             onClick = { selectedOfferType = null },
-                            label = { Text("Tout", fontSize = 12.sp) }
+                            label = { Text("Tout", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            modifier = Modifier.height(28.dp)
                         )
                     }
                     item {
                         FilterChip(
                             selected = selectedOfferType == OfferType.RENT,
                             onClick = { selectedOfferType = OfferType.RENT },
-                            label = { Text("🚜 À Louer", fontSize = 12.sp) }
+                            label = { Text("🚜 Louer", fontSize = 11.sp) },
+                            modifier = Modifier.height(28.dp)
                         )
                     }
                     item {
                         FilterChip(
                             selected = selectedOfferType == OfferType.SALE,
                             onClick = { selectedOfferType = OfferType.SALE },
-                            label = { Text("🏷️ À Vendre", fontSize = 12.sp) }
+                            label = { Text("🏷️ Vendre", fontSize = 11.sp) },
+                            modifier = Modifier.height(28.dp)
                         )
                     }
                     item {
-                        FilterChip(
-                            selected = sortByProximity,
-                            onClick = { sortByProximity = !sortByProximity },
-                            label = { Text("📍 Proximité", fontSize = 12.sp) },
-                            leadingIcon = {
-                                Icon(Icons.Default.NearMe, contentDescription = null, modifier = Modifier.size(13.dp))
-                            }
-                        )
+                        VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 4.dp))
                     }
-                    item {
-                        FilterChip(
-                            selected = false,
-                            onClick = {
-                                roiSelectedEquipment = null
-                                showRoiCalculator = true
-                            },
-                            label = { Text("📊 Rentabilité", fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(containerColor = MintLight, labelColor = ForestGreenDark)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // Category Scroll
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
                     items(EquipmentCategory.entries) { cat ->
                         FilterChip(
                             selected = selectedCategory == cat,
                             onClick = { selectedCategory = cat },
-                            label = { Text(cat.label, fontSize = 12.sp) }
+                            label = { Text(cat.label, fontSize = 11.sp) },
+                            modifier = Modifier.height(28.dp)
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 2. SEARCH BAR & ROI BUTTON
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Rechercher un engin...", fontSize = 14.sp) },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(imageVector = Icons.Default.Clear, contentDescription = "Effacer", modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(24.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .testTag("equipment_search_field"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = LightSurfaceVariant.copy(alpha = 0.5f),
+                            focusedContainerColor = Color.White
+                        )
+                    )
+                    
+                    // ROI Button - Standard IconButton for reliability
+                    IconButton(
+                        onClick = { 
+                            roiSelectedEquipment = null
+                            showRoiCalculator = true 
+                        },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(MintLight, CircleShape)
+                            .border(1.dp, ForestGreenPrimary.copy(alpha = 0.2f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Calculate, 
+                            contentDescription = "Rentabilité", 
+                            tint = ForestGreenPrimary, 
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // 3. Proximity Toggle
+                FilterChip(
+                    selected = sortByProximity,
+                    onClick = { sortByProximity = !sortByProximity },
+                    label = { Text("📍 Machines les plus proches", fontSize = 11.sp) },
+                    modifier = Modifier.height(28.dp)
+                )
             }
 
             Divider(color = MaterialTheme.colorScheme.outlineVariant)

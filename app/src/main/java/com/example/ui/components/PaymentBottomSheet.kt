@@ -590,32 +590,33 @@ fun PaymentProviderTile(
         ) {
             Box(
                 modifier = Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(brandColor),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.White)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
+                AppAsyncImage(
+                    imageUrl = provider.logoUrl,
+                    contentDescription = provider.displayName,
+                    modifier = Modifier.fillMaxSize().padding(4.dp),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+                
                 if (isSelected) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = brandTextColor,
-                        modifier = Modifier.size(15.dp)
-                    )
-                } else if (provider == PaymentProvider.CREDIT_CARD) {
-                    Icon(
-                        imageVector = Icons.Default.CreditCard,
-                        contentDescription = null,
-                        tint = brandTextColor,
-                        modifier = Modifier.size(14.dp)
-                    )
-                } else if (provider == PaymentProvider.CINETPAY) {
-                    Icon(
-                        imageVector = Icons.Default.FlashOn,
-                        contentDescription = null,
-                        tint = brandTextColor,
-                        modifier = Modifier.size(14.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(brandColor.copy(alpha = 0.4f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
@@ -626,11 +627,11 @@ fun PaymentProviderTile(
                     PaymentProvider.MTN_MONEY -> "MTN MoMo"
                     PaymentProvider.MOOV_MONEY -> "Moov"
                     PaymentProvider.WAVE -> "Wave"
-                    PaymentProvider.CREDIT_CARD -> "Carte Bancaire"
+                    PaymentProvider.CREDIT_CARD -> "Cartes"
                 },
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 10.5.sp
+                    fontSize = 10.sp
                 ),
                 textAlign = TextAlign.Center,
                 maxLines = 1

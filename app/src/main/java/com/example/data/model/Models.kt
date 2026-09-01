@@ -90,13 +90,13 @@ enum class WasteType(val label: String, val carbonRate: Double, val icon: String
     PALM_OIL_BUNCHES("Rafles & Fibres de Palmier à Huile", 0.85, "🌴")
 }
 
-enum class PaymentProvider(val displayName: String, val code: String, val prefix: String) {
-    ORANGE_MONEY("Orange Money", "OM", "#144#"),
-    MTN_MONEY("MTN Mobile Money", "MTN", "*133#"),
-    MOOV_MONEY("Moov Money", "MOOV", "*155#"),
-    WAVE("Wave", "WAVE", "Wave App / QR"),
-    CINETPAY("CinetPay Multi-Passerelle", "CINETPAY", "API v2 / Tous Réseaux"),
-    CREDIT_CARD("Carte Bancaire", "CARD", "Visa / Mastercard")
+enum class PaymentProvider(val displayName: String, val code: String, val prefix: String, val logoUrl: String) {
+    ORANGE_MONEY("Orange Money", "OM", "#144#", "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Orange_logo.svg/256px-Orange_logo.svg.png"),
+    MTN_MONEY("MTN Mobile Money", "MTN", "*133#", "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/MTN_Logo.svg/256px-MTN_Logo.svg.png"),
+    MOOV_MONEY("Moov Money", "MOOV", "*155#", "https://seeklogo.com/images/M/moov-africa-logo-18118C526A-seeklogo.com.png"),
+    WAVE("Wave", "WAVE", "Wave App / QR", "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Wave_Mobile_Money_logo.png/256px-Wave_Mobile_Money_logo.png"),
+    CINETPAY("CinetPay Multi-Passerelle", "CINETPAY", "API v2 / Tous Réseaux", "https://cinetpay.com/img/cinetpay-logo.png"),
+    CREDIT_CARD("Carte Bancaire", "CARD", "Visa / Mastercard", "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/256px-Visa_Inc._logo.svg.png")
 }
 
 enum class ContractStatus(val label: String) {

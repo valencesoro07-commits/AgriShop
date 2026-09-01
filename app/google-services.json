@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "848753301607",
+    "project_id": "agrishop-1513a",
+    "storage_bucket": "agrishop-1513a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848753301607:android:e6c38331509d480ed39cc2",
+        "android_client_info": {
+          "package_name": "com.Agrishop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "848753301607-e6krfl7ivbc1d6sg10tf3j5ucdtts559.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.Agrishop",
+            "certificate_hash": "457969510b78cda4d5a0d129cb93b7faf18c45b9"
+          }
+        },
+        {
+          "client_id": "848753301607-bal613rphifslnonrtr1e3tknusg364o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTxtH7WodjfSxKRffu7YLQUrH4IWi1Z_o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "848753301607-bal613rphifslnonrtr1e3tknusg364o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -95,6 +95,26 @@ fun AgriShopApp(
     val currentCity by viewModel.currentCity.collectAsStateWithLifecycle()
     val userCoordinates by viewModel.userCoordinates.collectAsStateWithLifecycle()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.values.any { it }) {
+            viewModel.refreshUserLocation()
+        }
+    }
+
+    LaunchedEffect(isUserAuthenticated) {
+        if (isUserAuthenticated) {
+            permissionLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
     val activeContractsCount = rentalContracts.count { it.status.name == "ACTIVE" }
 
     // If user is not authenticated, show Firebase Auth Screen
@@ -585,6 +605,36 @@ fun AgriShopApp(
                                 DropdownMenuItem(
                                     leadingIcon = {
                                         Icon(
+                                            imageVector = Icons.Default.MyLocation,
+                                            contentDescription = null,
+                                            tint = ForestGreenPrimary
+                                        )
+                                    },
+                                    text = {
+                                        Column {
+                                            Text("Me géolocaliser (GPS)", fontWeight = FontWeight.Bold)
+                                            Text(
+                                                "Position : $currentCity",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    color = ForestGreenPrimary
+                                                )
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        showTopMenu = false
+                                        permissionLauncher.launch(
+                                            arrayOf(
+                                                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                                android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
+                                        )
+                                    }
+                                )
+
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
                                             imageVector = Icons.Default.LocationOn,
                                             contentDescription = null,
                                             tint = ForestGreenPrimary
@@ -592,9 +642,9 @@ fun AgriShopApp(
                                     },
                                     text = {
                                         Column {
-                                            Text("Changer Région GPS", fontWeight = FontWeight.SemiBold)
+                                            Text("Choisir Manuellement", fontWeight = FontWeight.SemiBold)
                                             Text(
-                                                "Actuelle : $currentCity",
+                                                "Rayon km depuis $currentCity",
                                                 style = MaterialTheme.typography.labelSmall.copy(
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
